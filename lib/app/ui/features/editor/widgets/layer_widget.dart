@@ -1,20 +1,20 @@
 import 'package:boginni_utils/boginni_utils.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_paint/app/ui/features/editor/controllers/editor_store.dart';
 
 class LayerControllerWidget extends StatefulWidget {
   const LayerControllerWidget({
     super.key,
-    required this.layers,
+    required this.store,
   });
 
-  final int layers;
+  final EditorStore store;
 
   @override
   State<LayerControllerWidget> createState() => _LayerControllerWidgetState();
 }
 
 class _LayerControllerWidgetState extends State<LayerControllerWidget> {
-  final keys = List.generate(5, (index) => ValueKey(index));
 
   @override
   Widget build(BuildContext context) {
@@ -27,27 +27,41 @@ class _LayerControllerWidgetState extends State<LayerControllerWidget> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              'Layers',
-              style: context.textTheme.titleMedium,
-              textAlign: TextAlign.start,
+            Row(
+              children: [
+                Text(
+                  'Layers: ${widget.store.layers.length}',
+                  style: context.textTheme.titleMedium,
+                  textAlign: TextAlign.start,
+                ),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.add),
+                  onPressed: () {
+                    final layers = widget.store.layers;
+                    widget.store.setLayers(layers..add(layers.length));
+                  },
+                ),
+              ],
             ),
             const SizedBox(
               height: 8,
             ),
             ReorderableListView.builder(
-              itemCount: widget.layers,
+              itemCount: widget.store.layers.length,
               shrinkWrap: true,
               buildDefaultDragHandles: false,
               onReorder: (oldIndex, newIndex) {
-                final key = keys.removeAt(oldIndex);
-                keys.insert(newIndex, key);
+                final layers = widget.store.layers;
+                final layer = layers.removeAt(oldIndex);
+                layers.insert(newIndex, layer);
+                widget.store.setLayers(layers);
               },
               itemBuilder: (context, index) {
-                final keyValue = keys[index].value;
+                final keyValue = widget.store.layers[index];
 
                 return Padding(
-                  key: keys[index],
+                  key: ValueKey(keyValue),
                   padding: const EdgeInsets.symmetric(vertical: 4.0),
                   child: Material(
                     borderRadius: BorderRadius.circular(8),
@@ -55,17 +69,32 @@ class _LayerControllerWidgetState extends State<LayerControllerWidget> {
                     child: ReorderableDragStartListener(
                       index: index,
                       enabled: true,
-                      child: Row(
+                      child: Stack(
                         children: [
-                          ColoredBox(
-                            color: Colors.primaries[keyValue % Colors.primaries.length],
-                            child: const SizedBox(
-                              width: 100,
-                              height: 100,
-                            ),
+                          Row(
+                            children: [
+                              ColoredBox(
+                                color: Colors.primaries[keyValue % Colors.primaries.length],
+                                child: const SizedBox(
+                                  width: 100,
+                                  height: 100,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text('Layer ${keyValue + 1}'),
+                            ],
                           ),
-                          const SizedBox(width: 8),
-                          Text('Layer ${keyValue + 1}'),
+                          Positioned(
+                            right: 0,
+                            top: 0,
+                            child: IconButton(
+                              icon: const Icon(Icons.remove),
+                              onPressed: () {
+                                final layers = widget.store.layers;
+                                widget.store.setLayers(layers..removeAt(index));
+                              },
+                            )
+                          ),
                         ],
                       ),
                     ),
